@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/rest"
 
 	"github.com/vimeo/pentagon"
+	"github.com/vimeo/pentagon/gsm"
 	"github.com/vimeo/pentagon/vault"
 )
 
@@ -76,7 +77,7 @@ func main() {
 		os.Exit(31)
 	}
 
-	var gsmClient *secretmanager.Client
+	var gsmClient gsm.SecretAccessor
 	needGSM := false
 	for _, m := range config.Mappings {
 		if m.SourceType == pentagon.GSMSourceType {
@@ -85,12 +86,13 @@ func main() {
 		}
 	}
 	if needGSM {
-		gsmClient, err = secretmanager.NewClient(ctx)
-		if err != nil {
-			log.Printf("unable to get GSM client: %s", err)
+		client, gsmErr := secretmanager.NewClient(ctx)
+		if gsmErr != nil {
+			log.Printf("unable to get GSM client: %s", gsmErr)
 			os.Exit(32)
 		}
-		defer gsmClient.Close()
+		defer client.Close()
+		gsmClient = client
 	}
 
 	reflector := pentagon.NewReflector(
