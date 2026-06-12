@@ -76,12 +76,22 @@ func main() {
 		os.Exit(31)
 	}
 
-	gsmClient, err := secretmanager.NewClient(ctx)
-	if err != nil {
-		log.Printf("unable to get GSM client: %s", err)
-		os.Exit(32)
+	var gsmClient *secretmanager.Client
+	needGSM := false
+	for _, m := range config.Mappings {
+		if m.SourceType == pentagon.GSMSourceType {
+			needGSM = true
+			break
+		}
 	}
-	defer gsmClient.Close()
+	if needGSM {
+		gsmClient, err = secretmanager.NewClient(ctx)
+		if err != nil {
+			log.Printf("unable to get GSM client: %s", err)
+			os.Exit(32)
+		}
+		defer gsmClient.Close()
+	}
 
 	reflector := pentagon.NewReflector(
 		vaultClient.Logical(),
